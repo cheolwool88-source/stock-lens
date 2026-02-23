@@ -2,8 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  RadarChart, PolarGrid, PolarAngleAxis, Radar, BarChart, Bar, Legend, 
-  ComposedChart, Line, Cell
+  BarChart, Bar, ComposedChart, Line, Cell
 } from 'recharts';
 import { StockInfo, DashboardSection, MBTIType, NewsItem, CorporatePerformance } from '../types';
 import { MOCK_ANNUAL_PERFORMANCE, MOCK_QUARTERLY_PERFORMANCE, MOCK_FLOW } from '../constants';
@@ -12,6 +11,8 @@ import { summarizeNews, getQuickAdvice, fetchStockNews } from '../services/gemin
 interface AnalysisDashboardProps {
   stock: StockInfo;
   mbti: MBTIType;
+  isWatchlisted: boolean;
+  onToggleWatchlist: () => void;
   onBack: () => void;
 }
 
@@ -63,7 +64,7 @@ const Candlestick = (props: any) => {
   );
 };
 
-const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ stock, mbti, onBack }) => {
+const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ stock, mbti, isWatchlisted, onToggleWatchlist, onBack }) => {
   const [activeSection, setActiveSection] = useState<DashboardSection>('chart');
   const [selectedNews, setSelectedNews] = useState<any | null>(null);
   const [isSummarizing, setIsSummarizing] = useState(false);
@@ -107,7 +108,7 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ stock, mbti, onBa
       const low = Math.min(open, close) - Math.random() * (volatility * 0.3);
       
       const item: any = {
-        time: timeframe === '1D' ? `${Math.floor(i/4) + 9}:${(i%4)*15}` : `24.${Math.floor(i/20)+1}.${(i%20)+1}`,
+        time: timeframe === '1D' ? `${Math.floor(i/4) + 9}:${(i%4)*15}` : `26.${Math.floor(i/20)+1}.${(i%20)+1}`,
         open: parseFloat(open.toFixed(2)),
         high: parseFloat(high.toFixed(2)),
         low: parseFloat(low.toFixed(2)),
@@ -148,6 +149,13 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ stock, mbti, onBa
     ? MOCK_ANNUAL_PERFORMANCE 
     : MOCK_QUARTERLY_PERFORMANCE;
 
+  // 값의 부호에 따른 색상 결정 함수
+  const getFlowColor = (val: number) => {
+    if (val > 0) return 'text-rose-500 font-bold';
+    if (val < 0) return 'text-blue-500 font-bold';
+    return 'text-slate-400';
+  };
+
   return (
     <div className="max-w-7xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* 상단 종목 기본 정보 */}
@@ -160,7 +168,18 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ stock, mbti, onBa
         </button>
         <div className="flex items-center gap-6">
           <div className="text-right">
-            <h2 className="text-3xl font-bold">{stock.name} <span className="text-slate-500 text-xl font-normal">{stock.symbol}</span></h2>
+            <div className="flex items-center justify-end gap-3 mb-1">
+               <h2 className="text-3xl font-bold">{stock.name} <span className="text-slate-500 text-xl font-normal">{stock.symbol}</span></h2>
+               <button 
+                onClick={onToggleWatchlist}
+                className={`p-1.5 rounded-full transition-all ${isWatchlisted ? 'text-amber-400 bg-amber-400/10' : 'text-slate-500 hover:text-white hover:bg-slate-800'}`}
+                title={isWatchlisted ? '관심종목 해제' : '관심종목 추가'}
+               >
+                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                 </svg>
+               </button>
+            </div>
             <div className="flex justify-end gap-3 mt-1">
               <span className={`text-2xl font-mono font-bold ${stock.change >= 0 ? 'text-rose-500' : 'text-blue-500'}`}>
                 {stock.symbol.match(/[A-Z]/) ? '$' : ''}{stock.price.toLocaleString()}
@@ -264,7 +283,7 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ stock, mbti, onBa
                     <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                     <XAxis dataKey="time" hide />
                     <YAxis orientation="right" domain={['auto', 'auto']} stroke="#475569" fontSize={11} tickFormatter={(val) => val.toLocaleString()} axisLine={false} tickLine={false} />
-                    <Tooltip content={<></>} cursor={{ stroke: '#64748b', strokeWidth: 1, strokeDasharray: '3 3' }} />
+                    <Tooltip content={<div />} cursor={{ stroke: '#64748b', strokeWidth: 1, strokeDasharray: '3 3' }} />
                     <Bar dataKey="close" shape={<Candlestick />} isAnimationActive={false} />
                     {/* 이동평균선 (MA) */}
                     <Line type="monotone" dataKey="ma5" stroke="#fb923c" strokeWidth={1} dot={false} isAnimationActive={false} />
@@ -288,16 +307,6 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ stock, mbti, onBa
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-            </div>
-            <div className="mt-4 flex justify-between items-center text-[10px] text-slate-500 font-bold border-t border-slate-800 pt-4 uppercase tracking-widest">
-                <div className="flex gap-4">
-                  <span>정보 제공: 실시간 금융 분석 엔진</span>
-                  <span className="text-emerald-500 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    데이터 연결됨
-                  </span>
-                </div>
-                <span>스탁렌즈 프로 분석 v2.0</span>
             </div>
           </div>
         )}
@@ -336,29 +345,6 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ stock, mbti, onBa
                   ))}
                 </tbody>
               </table>
-            </div>
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="glass p-6 rounded-2xl border border-emerald-500/20">
-                <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">수익성 분석</h4>
-                <div className="flex justify-between items-end">
-                  <div><span className="text-3xl font-black text-emerald-400">14.6%</span><p className="text-xs text-slate-500 mt-1">예상 영업이익률</p></div>
-                  <div className="text-right"><span className="text-emerald-500 text-xs font-bold">▲ 12.1%</span><p className="text-[10px] text-slate-600 italic">전년 대비</p></div>
-                </div>
-              </div>
-              <div className="glass p-6 rounded-2xl border border-sky-500/20">
-                <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">가치 평가</h4>
-                <div className="flex justify-between items-end">
-                  <div><span className="text-3xl font-black text-sky-400">13.1배</span><p className="text-xs text-slate-500 mt-1">업종 평균 대비 저평가</p></div>
-                  <div className="w-12 h-12 bg-sky-500/10 rounded-full flex items-center justify-center text-sky-500"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg></div>
-                </div>
-              </div>
-              <div className="glass p-6 rounded-2xl border border-amber-500/20">
-                <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">성장 지표</h4>
-                <div className="flex justify-between items-end">
-                  <div><span className="text-3xl font-black text-amber-400">우수</span><p className="text-xs text-slate-500 mt-1">매출액 증가율 19%</p></div>
-                  <div className="flex gap-1">{[1,2,3,4,5].map(v => (<div key={v} className={`w-1.5 h-6 rounded-full ${v <= 4 ? 'bg-amber-500' : 'bg-slate-800'}`}></div>))}</div>
-                </div>
-              </div>
             </div>
           </div>
         )}
@@ -409,48 +395,81 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ stock, mbti, onBa
           </div>
         )}
 
-        {/* 수급현황 */}
+        {/* 수급현황 (차트 대신 표 형태로 변경) */}
         {activeSection === 'investor' && (
-          <div className="py-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-              <div>
-                <h3 className="text-xl font-bold mb-8 flex items-center gap-2"><span className="text-indigo-400">👥</span> 주체별 순매매 동향</h3>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={MOCK_FLOW} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                      <XAxis dataKey="date" stroke="#475569" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#475569" fontSize={12} axisLine={false} tickLine={false} />
-                      <Tooltip cursor={{ fill: '#334155', opacity: 0.4 }} contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)' }} />
-                      <Legend verticalAlign="top" height={36}/>
-                      <Bar dataKey="retail" name="개인" fill="#f43f5e" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="institution" name="기관" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="foreign" name="외국인" fill="#10b981" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+          <div className="py-4 animate-in fade-in duration-500">
+            <h3 className="text-xl font-bold mb-8 flex items-center gap-2">
+              <span className="text-indigo-400">👥</span> 주체별 순매매 동향 (최근 10일)
+              <span className="text-xs font-normal text-slate-500 ml-2">단위: 억원 / 일별</span>
+            </h3>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/30">
+                <table className="w-full text-sm text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-800/50">
+                      <th className="p-4 font-bold text-slate-400 border-r border-slate-800 text-center">날짜</th>
+                      <th className="p-4 font-bold text-rose-500 border-r border-slate-800 text-center">개인</th>
+                      <th className="p-4 font-bold text-blue-500 border-r border-slate-800 text-center">기관</th>
+                      <th className="p-4 font-bold text-emerald-500 text-center">외국인</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {MOCK_FLOW.map((row, idx) => (
+                      <tr key={idx} className="hover:bg-slate-800/20 transition-colors">
+                        <td className="p-3 text-center text-slate-400 font-mono border-r border-slate-800">{row.date}</td>
+                        <td className={`p-3 text-center font-mono border-r border-slate-800 ${getFlowColor(row.retail)}`}>
+                          {row.retail > 0 ? '+' : ''}{row.retail.toLocaleString()}
+                        </td>
+                        <td className={`p-3 text-center font-mono border-r border-slate-800 ${getFlowColor(row.institution)}`}>
+                          {row.institution > 0 ? '+' : ''}{row.institution.toLocaleString()}
+                        </td>
+                        <td className={`p-3 text-center font-mono ${getFlowColor(row.foreign)}`}>
+                          {row.foreign > 0 ? '+' : ''}{row.foreign.toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <div className="space-y-8">
-                <div>
-                    <h4 className="text-sm font-black text-slate-500 mb-4 uppercase tracking-widest border-l-2 border-indigo-500 pl-3">수급 강도 히트맵 (최근 5일)</h4>
-                    <div className="grid grid-cols-5 gap-3">{[10, -5, 20, 15, -2].map((val, i) => (<div key={i} className={`h-20 rounded-2xl flex flex-col items-center justify-center border transition-all hover:scale-105 ${val > 10 ? 'bg-rose-500/10 border-rose-500/30 text-rose-500 shadow-lg shadow-rose-500/5' : val > 0 ? 'bg-rose-500/5 border-rose-500/10 text-rose-400' : 'bg-blue-500/10 border-blue-500/30 text-blue-400 shadow-lg shadow-blue-500/5'}`}><span className="text-[10px] font-black opacity-50 mb-1">D-{5-i}</span><span className="font-mono font-black text-lg">{val > 0 ? '+' : ''}{val}%</span></div>))}</div>
-                </div>
-                <div className="glass p-6 rounded-3xl border border-slate-800">
-                  <h4 className="text-sm font-black text-slate-400 mb-6 uppercase tracking-widest flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>증권사 목표가 합의</h4>
-                  <div className="space-y-4">
+
+              <div className="space-y-6">
+                <div className="glass p-6 rounded-3xl border border-indigo-500/20">
+                  <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                    10일 누적 수급 비중
+                  </h4>
+                  <div className="space-y-6">
                     {[
-                      { firm: '미래에셋증권', target: stock.price * 1.25, opinion: '강력 매수' },
-                      { firm: 'NH투자증권', target: stock.price * 1.15, opinion: '매수' },
-                      { firm: 'JP 모건', target: stock.price * 1.05, opinion: '중립' }
-                    ].map((row) => (
-                      <div key={row.firm} className="flex justify-between items-center bg-slate-900/40 p-3 rounded-xl border border-slate-800/50">
-                        <span className="text-slate-300 font-bold text-sm">{row.firm}</span>
-                        <div className="flex items-center gap-6">
-                          <span className="font-mono font-black text-sky-400">{stock.symbol.match(/[A-Z]/) ? '$' : ''}{Math.round(row.target).toLocaleString()}</span>
-                          <span className={`font-black px-2.5 py-1 rounded-lg text-[10px] border ${row.opinion.includes('매수') ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-slate-700/50 text-slate-400 border-slate-600'}`}>{row.opinion}</span>
+                      { label: '개인', value: MOCK_FLOW.reduce((a,b) => a+b.retail, 0), color: 'bg-rose-500' },
+                      { label: '기관', value: MOCK_FLOW.reduce((a,b) => a+b.institution, 0), color: 'bg-blue-500' },
+                      { label: '외국인', value: MOCK_FLOW.reduce((a,b) => a+b.foreign, 0), color: 'bg-emerald-500' }
+                    ].map(item => (
+                      <div key={item.label}>
+                        <div className="flex justify-between text-xs mb-2">
+                          <span className="text-slate-300 font-bold">{item.label}</span>
+                          <span className={`font-mono ${item.value >= 0 ? 'text-rose-500' : 'text-blue-500'}`}>{item.value.toLocaleString()} 억원</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full ${item.color} transition-all duration-1000`} 
+                            style={{ width: `${Math.min(Math.abs(item.value) / 2, 100)}%` }}
+                          ></div>
                         </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                <div className="glass p-6 rounded-3xl border border-slate-800">
+                  <h4 className="text-xs font-black text-slate-500 mb-6 uppercase tracking-widest flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    수급 엔진 코멘트
+                  </h4>
+                  <div className="p-4 bg-slate-900/50 rounded-2xl border border-slate-800">
+                    <p className="text-sm text-slate-300 leading-relaxed italic">
+                      "최근 10일간 <span className="text-emerald-400 font-bold">외국인</span>의 꾸준한 매수세가 관찰되며, 기관의 매도 물량을 개인이 받아내는 전형적인 순환매 장세가 지속되고 있습니다."
+                    </p>
                   </div>
                 </div>
               </div>

@@ -14,15 +14,15 @@ const isQuotaError = (error: any): boolean => {
 };
 
 /**
- * 네이버 금융(finance.naver.com)의 현재 인기 검색 종목 TOP 5를 가져옵니다.
+ * 네이버 금융(finance.naver.com)의 현재 인기 검색 종목 TOP 10을 가져옵니다.
  */
 export const fetchTrendingStocks = async (): Promise<StockInfo[]> => {
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `네이버 금융(finance.naver.com)에서 현재 한국 시장의 "인기 검색 종목" TOP 5를 찾아주세요.
+      contents: `네이버 금융(finance.naver.com)에서 현재 한국 시장의 "인기 검색 종목" TOP 10을 찾아주세요.
       각 종목에 대해 이름, 공식 6자리 종목 코드, 현재가, 전일대비 변동 금액, 전일대비 변동률, 그리고 업종(섹터) 정보를 제공하세요.
-      반드시 5개의 객체를 포함한 JSON 배열 형식으로만 반환하세요.`,
+      반드시 10개의 객체를 포함한 JSON 배열 형식으로만 반환하세요.`,
       config: {
         tools: [{ googleSearch: {} }],
         responseMimeType: "application/json",
@@ -45,7 +45,7 @@ export const fetchTrendingStocks = async (): Promise<StockInfo[]> => {
     });
     
     const parsed = JSON.parse(response.text);
-    return Array.isArray(parsed) ? parsed.slice(0, 5) : TRENDING_STOCKS;
+    return Array.isArray(parsed) ? parsed.slice(0, 10) : TRENDING_STOCKS;
   } catch (error) {
     console.error("인기 종목 가져오기 에러:", error);
     return TRENDING_STOCKS; 

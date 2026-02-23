@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import SearchBar from './components/SearchBar';
 import TrendingList from './components/TrendingList';
+import Watchlist from './components/Watchlist';
 import AnalysisDashboard from './components/AnalysisDashboard';
 import MBTIModal from './components/MBTIModal';
 import { StockInfo, ViewType, MBTIProfile } from './types';
@@ -12,6 +13,7 @@ const App: React.FC = () => {
   const [view, setView] = useState<ViewType>('main');
   const [selectedStock, setSelectedStock] = useState<StockInfo | null>(null);
   const [trendingStocks, setTrendingStocks] = useState<StockInfo[]>(TRENDING_STOCKS);
+  const [watchlist, setWatchlist] = useState<StockInfo[]>([]);
   const [mbti, setMbti] = useState<MBTIProfile | null>(null);
   const [isMbtiModalOpen, setIsMbtiModalOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -19,7 +21,22 @@ const App: React.FC = () => {
   useEffect(() => {
     // 앱 시작 시 실시간 인기 종목 로드
     fetchTrendingStocks().then(setTrendingStocks);
+    
+    // 로컬 스토리지에서 관심종목 로드
+    const savedWatchlist = localStorage.getItem('stock-lens-watchlist');
+    if (savedWatchlist) {
+      try {
+        setWatchlist(JSON.parse(savedWatchlist));
+      } catch (e) {
+        console.error("관심종목 로드 에러", e);
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    // 관심종목 변경 시 로컬 스토리지 저장
+    localStorage.setItem('stock-lens-watchlist', JSON.stringify(watchlist));
+  }, [watchlist]);
 
   const handleSearch = async (query: string) => {
     setIsSearching(true);
@@ -39,10 +56,22 @@ const App: React.FC = () => {
     }
   };
 
+  const toggleWatchlist = (stock: StockInfo) => {
+    setWatchlist(prev => {
+      const exists = prev.find(s => s.symbol === stock.symbol);
+      if (exists) {
+        return prev.filter(s => s.symbol !== stock.symbol);
+      }
+      return [...prev, stock];
+    });
+  };
+
   const handleMbtiResult = (profile: MBTIProfile) => {
     setMbti(profile);
     setIsMbtiModalOpen(false);
   };
+
+  const isWatchlisted = selectedStock ? !!watchlist.find(s => s.symbol === selectedStock.symbol) : false;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 selection:bg-sky-500/30">
@@ -110,10 +139,14 @@ const App: React.FC = () => {
                 <p className="text-slate-500 text-sm mt-2">금융 분석 엔진이 최신 정보를 수집하고 정교하게 처리하고 있습니다.</p>
               </div>
             ) : (
-              <>
+              <div className="w-full max-w-4xl space-y-12">
                 <SearchBar onSearch={handleSearch} />
-                <TrendingList stocks={trendingStocks} onSelect={(stock) => handleSearch(stock.symbol)} />
-              </>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                  <TrendingList stocks={trendingStocks} onSelect={(stock) => handleSearch(stock.symbol)} />
+                  <Watchlist stocks={watchlist} onSelect={(stock) => handleSearch(stock.symbol)} onRemove={toggleWatchlist} />
+                </div>
+              </div>
             )}
             
             <div className="mt-32 grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl">
@@ -139,6 +172,8 @@ const App: React.FC = () => {
             <AnalysisDashboard 
               stock={selectedStock} 
               mbti={mbti?.type || null} 
+              isWatchlisted={isWatchlisted}
+              onToggleWatchlist={() => toggleWatchlist(selectedStock)}
               onBack={() => setView('main')} 
             />
           )
@@ -146,7 +181,7 @@ const App: React.FC = () => {
       </main>
 
       <footer className="py-12 border-t border-slate-900 text-center text-slate-600 text-sm">
-        <p>© 2024 스탁렌즈(Stock-Lens). 모든 권리 보유. 본 정보는 투자 참고용이며 결과에 대한 책임은 사용자에게 있습니다.</p>
+        <p>© 2026 스탁렌즈(Stock-Lens). 모든 권리 보유. 본 정보는 투자 참고용이며 결과에 대한 책임은 사용자에게 있습니다.</p>
         <p className="mt-2 font-medium">"성공적인 투자는 정확한 데이터에서 시작되고, 훌륭한 앱은 그 데이터를 어떻게 요약하느냐로 가치를 증명합니다."</p>
       </footer>
 

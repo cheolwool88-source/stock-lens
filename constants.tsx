@@ -7,10 +7,15 @@ export const TRENDING_STOCKS: StockInfo[] = [
   { symbol: '373220', name: 'LG에너지솔루션', price: 395000, change: -4500, changePercent: -1.13, sector: '이차전지' },
   { symbol: '005380', name: '현대차', price: 242500, change: 1500, changePercent: 0.62, sector: '자동차 제조' },
   { symbol: '068270', name: '셀트리온', price: 198200, change: 2100, changePercent: 1.07, sector: '제약·바이오' },
+  { symbol: '035420', name: 'NAVER', price: 182300, change: -1200, changePercent: -0.65, sector: 'IT 서비스' },
+  { symbol: '035720', name: '카카오', price: 45600, change: 400, changePercent: 0.88, sector: 'IT 서비스' },
+  { symbol: '105560', name: 'KB금융', price: 78900, change: 1500, changePercent: 1.94, sector: '금융' },
+  { symbol: '000270', name: '기아', price: 118200, change: 2300, changePercent: 1.98, sector: '자동차 제조' },
+  { symbol: '083660', name: '한라캐스트', price: 1850, change: 45, changePercent: 2.49, sector: '자동차 부품' },
 ];
 
 export const MOCK_ANNUAL_PERFORMANCE: CorporatePerformance = {
-  headers: ['2021.12', '2022.12', '2023.12', '2024.12(예상)'],
+  headers: ['2023.12', '2024.12', '2025.12', '2026.12(예상)'],
   metrics: [
     { name: '매출액', values: [2796048, 3022314, 2589355, 3084562] },
     { name: '영업이익', values: [516339, 433766, 65670, 452310] },
@@ -29,7 +34,7 @@ export const MOCK_ANNUAL_PERFORMANCE: CorporatePerformance = {
 };
 
 export const MOCK_QUARTERLY_PERFORMANCE: CorporatePerformance = {
-  headers: ['2023.09', '2023.12', '2024.03', '2024.06(예상)'],
+  headers: ['2025.09', '2025.12', '2026.03', '2026.06(예상)'],
   metrics: [
     { name: '매출액', values: [674047, 677799, 719156, 735400] },
     { name: '영업이익', values: [24335, 28247, 66060, 82100] },
@@ -52,11 +57,16 @@ export const MOCK_NEWS: NewsItem[] = [
 ];
 
 export const MOCK_FLOW: InvestorFlow[] = [
-  { date: '월', retail: 120, institution: -45, foreign: 80 },
-  { date: '화', retail: -30, institution: 60, foreign: 15 },
-  { date: '수', retail: 45, institution: 20, foreign: -10 },
-  { date: '목', retail: 10, institution: -15, foreign: 40 },
-  { date: '금', retail: -80, institution: 110, foreign: 55 },
+  { date: '26.02.21', retail: -80, institution: 110, foreign: 55 },
+  { date: '26.02.20', retail: 10, institution: -15, foreign: 40 },
+  { date: '26.02.19', retail: 45, institution: 20, foreign: -10 },
+  { date: '26.02.18', retail: -30, institution: 60, foreign: 15 },
+  { date: '26.02.17', retail: 120, institution: -45, foreign: 80 },
+  { date: '26.02.14', retail: -55, institution: 40, foreign: 20 },
+  { date: '26.02.13', retail: 30, institution: -20, foreign: -15 },
+  { date: '26.02.12', retail: 90, institution: -110, foreign: 25 },
+  { date: '26.02.11', retail: -10, institution: 5, foreign: 12 },
+  { date: '26.02.10', retail: 40, institution: -25, foreign: -10 },
 ];
 
 export const MBTI_PROFILES: Record<string, MBTIProfile> = {
