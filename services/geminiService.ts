@@ -14,11 +14,32 @@ const isQuotaError = (error: any): boolean => {
 };
 
 /**
+ * 지수 백오프를 포함한 재시도 헬퍼
+ */
+const withRetry = async <T>(fn: () => Promise<T>, maxRetries = 2): Promise<T> => {
+  let lastError: any;
+  for (let i = 0; i <= maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (isQuotaError(error) && i < maxRetries) {
+        const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw lastError;
+};
+
+/**
  * 네이버 금융(finance.naver.com)의 현재 인기 검색 종목 TOP 10을 가져옵니다.
  */
 export const fetchTrendingStocks = async (): Promise<StockInfo[]> => {
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `네이버 금융(finance.naver.com)에서 현재 한국 시장의 "인기 검색 종목" TOP 10을 찾아주세요.
       각 종목에 대해 이름, 공식 6자리 종목 코드, 현재가, 전일대비 변동 금액, 전일대비 변동률, 그리고 업종(섹터) 정보를 제공하세요.
@@ -42,7 +63,7 @@ export const fetchTrendingStocks = async (): Promise<StockInfo[]> => {
           }
         }
       }
-    });
+    }));
     
     const parsed = JSON.parse(response.text);
     return Array.isArray(parsed) ? parsed.slice(0, 10) : TRENDING_STOCKS;
@@ -54,7 +75,7 @@ export const fetchTrendingStocks = async (): Promise<StockInfo[]> => {
 
 export const searchStockInfo = async (query: string): Promise<StockInfo | null> => {
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `"${query}" 주식의 실시간 정보를 검색하세요.
       현재가, 전일대비 변동 금액, 전일대비 변동률, 업종/산업군, 그리고 공식 심볼(종목코드)을 포함해야 합니다.
@@ -75,7 +96,7 @@ export const searchStockInfo = async (query: string): Promise<StockInfo | null> 
           required: ['symbol', 'name', 'price', 'change', 'changePercent', 'sector']
         }
       }
-    });
+    }));
     
     return JSON.parse(response.text);
   } catch (error) {
@@ -95,7 +116,7 @@ export const searchStockInfo = async (query: string): Promise<StockInfo | null> 
 
 export const fetchStockNews = async (stockName: string): Promise<NewsItem[]> => {
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `최근 30일 동안의 "${stockName}" 관련 뉴스 기사를 검색하세요.
       각 뉴스 항목에 대해 제목, 매체명, 정확한 날짜(YYYY-MM-DD), 그리고 초기 감성 분석(positive, negative, 또는 neutral)을 제공하세요.
@@ -119,7 +140,7 @@ export const fetchStockNews = async (stockName: string): Promise<NewsItem[]> => 
           }
         }
       }
-    });
+    }));
     
     return JSON.parse(response.text);
   } catch (error) {
@@ -130,7 +151,7 @@ export const fetchStockNews = async (stockName: string): Promise<NewsItem[]> => 
 
 export const summarizeNews = async (headline: string) => {
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `당신은 금융 분석 전문가입니다. 다음 뉴스 제목을 분석하여 투자자에게 도움이 될 3줄 핵심 요약과 투자 영향 점수(0-100)를 제공하세요. 모든 텍스트는 반드시 한국어로 작성해야 합니다.
       뉴스 제목: "${headline}"`,
@@ -146,7 +167,7 @@ export const summarizeNews = async (headline: string) => {
           required: ['summary', 'sentimentScore', 'impact']
         }
       }
-    });
+    }));
     return JSON.parse(response.text);
   } catch (error) {
     console.error("뉴스 요약 에러:", error);
@@ -160,7 +181,7 @@ export const summarizeNews = async (headline: string) => {
 
 export const analyzeStockMBTI = async (answers: string[]) => {
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `투자 성향 답변들을 분석하여 이 사용자가 'Shark'(공격), 'Turtle'(방어), 'Fox'(기술적/민첩), 'Owl'(가치/분석) 중 어떤 유형인지 결정하세요. 분석 결과는 JSON으로 반환하세요.
       답변들: ${answers.join(", ")}`,
@@ -175,7 +196,7 @@ export const analyzeStockMBTI = async (answers: string[]) => {
           required: ['type', 'reason']
         }
       }
-    });
+    }));
     return JSON.parse(response.text);
   } catch (error) {
     console.error("MBTI 분석 에러:", error);
@@ -185,10 +206,10 @@ export const analyzeStockMBTI = async (answers: string[]) => {
 
 export const getQuickAdvice = async (stockName: string, mbti: string) => {
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `투자자 성향이 ${mbti}인 사람에게 ${stockName} 주식에 대해 매우 짧고 명확한 한 줄 투자 조언을 한국어로 해주세요.`,
-    });
+    }));
     return response.text;
   } catch (error) {
     return "현재 시장 변동성을 주의 깊게 관찰하며 본인의 원칙에 따라 신중하게 결정하세요.";

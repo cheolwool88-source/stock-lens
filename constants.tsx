@@ -11,7 +11,7 @@ export const TRENDING_STOCKS: StockInfo[] = [
   { symbol: '035720', name: '카카오', price: 45600, change: 400, changePercent: 0.88, sector: 'IT 서비스' },
   { symbol: '105560', name: 'KB금융', price: 78900, change: 1500, changePercent: 1.94, sector: '금융' },
   { symbol: '000270', name: '기아', price: 118200, change: 2300, changePercent: 1.98, sector: '자동차 제조' },
-  { symbol: '083660', name: '한라캐스트', price: 1850, change: 45, changePercent: 2.49, sector: '자동차 부품' },
+  { symbol: '083660', name: '한라캐스트', price: 1910, change: 60, changePercent: 3.24, sector: '자동차 부품' },
 ];
 
 export const MOCK_ANNUAL_PERFORMANCE: CorporatePerformance = {

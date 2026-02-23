@@ -45,6 +45,9 @@ const App: React.FC = () => {
       if (stockData) {
         setSelectedStock(stockData);
         setView('dashboard');
+        
+        // 관심종목 가격 동기화 (검색된 최신 가격으로 업데이트)
+        setWatchlist(prev => prev.map(s => s.symbol === stockData.symbol ? stockData : s));
       } else {
         alert("종목 정보를 찾을 수 없습니다. 정확한 종목명이나 티커를 입력해주세요.");
       }
@@ -143,8 +146,8 @@ const App: React.FC = () => {
                 <SearchBar onSearch={handleSearch} />
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                  <TrendingList stocks={trendingStocks} onSelect={(stock) => handleSearch(stock.symbol)} />
-                  <Watchlist stocks={watchlist} onSelect={(stock) => handleSearch(stock.symbol)} onRemove={toggleWatchlist} />
+                  <TrendingList stocks={trendingStocks} onSelect={(stock) => handleSearch(stock.name)} />
+                  <Watchlist stocks={watchlist} onSelect={(stock) => handleSearch(stock.name)} onRemove={toggleWatchlist} />
                 </div>
               </div>
             )}
