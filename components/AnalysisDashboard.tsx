@@ -17,11 +17,16 @@ interface AnalysisDashboardProps {
 }
 
 /**
+ * 툴팁 내용을 숨기되 커서는 유지하기 위한 컴포넌트
+ */
+const HiddenTooltip = () => null;
+
+/**
  * 네이버 금융 스타일의 전문 캔들스틱 커스텀 셰이프
  */
 const Candlestick = (props: any) => {
   const { x, width, yAxis, payload } = props;
-  if (!yAxis || !payload) return null;
+  if (!yAxis || !payload || x === undefined || width === undefined) return null;
 
   const { open, close, high, low } = payload;
   const isUp = close >= open;
@@ -283,7 +288,7 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ stock, mbti, isWa
                     <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                     <XAxis dataKey="time" hide />
                     <YAxis orientation="right" domain={['auto', 'auto']} stroke="#475569" fontSize={11} tickFormatter={(val) => val.toLocaleString()} axisLine={false} tickLine={false} />
-                    <Tooltip content={<div />} cursor={{ stroke: '#64748b', strokeWidth: 1, strokeDasharray: '3 3' }} />
+                    <Tooltip content={<HiddenTooltip />} cursor={{ stroke: '#64748b', strokeWidth: 1, strokeDasharray: '3 3' }} />
                     <Bar dataKey="close" shape={<Candlestick />} isAnimationActive={false} />
                     {/* 이동평균선 (MA) */}
                     <Line type="monotone" dataKey="ma5" stroke="#fb923c" strokeWidth={1} dot={false} isAnimationActive={false} />
